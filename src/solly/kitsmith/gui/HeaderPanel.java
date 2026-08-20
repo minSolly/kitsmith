@@ -1,55 +1,58 @@
 package solly.kitsmith.gui;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.LineBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.GridLayout;
+import java.awt.*;
 
 public class HeaderPanel extends JPanel {
 
     private final JButton regenerateButton;
     private final JButton downloadButton;
+    private final JButton backButton;
 
     public HeaderPanel() {
         setLayout(new BorderLayout());
         setBackground(Theme.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(20, 16, 12, 16));
+        setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
 
-        JLabel title = new JLabel("KitSmith", SwingConstants.CENTER);
-        title.setFont(Theme.FONT_TITLE);
-        title.setForeground(Theme.TEXT_PRIMARY);
+        
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        leftPanel.setBackground(Theme.BACKGROUND);
+        backButton = createBackButton();
+        leftPanel.add(backButton);
+        add(leftPanel, BorderLayout.WEST);
 
-        JLabel subtitle = new JLabel("EXPERIMENTAL SOUND SYNTHESIS & GENERATION", SwingConstants.CENTER);
-        subtitle.setFont(Theme.FONT_SUBTITLE);
-        subtitle.setForeground(Theme.TEXT_SECONDARY);
+        
+        JPanel centerPanel = new JPanel();
+        centerPanel.setBackground(Theme.BACKGROUND);
+        add(centerPanel, BorderLayout.CENTER);
 
-        JPanel titleBlock = new JPanel();
-        titleBlock.setLayout(new javax.swing.BoxLayout(titleBlock, javax.swing.BoxLayout.Y_AXIS));
-        titleBlock.setBackground(Theme.BACKGROUND);
-        title.setAlignmentX(CENTER_ALIGNMENT);
-        subtitle.setAlignmentX(CENTER_ALIGNMENT);
-        titleBlock.add(title);
-        titleBlock.add(subtitle);
-        titleBlock.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
-
-        add(titleBlock, BorderLayout.NORTH);
-
-        JPanel actions = new JPanel(new GridLayout(1, 2, 10, 0));
-        actions.setBackground(Theme.BACKGROUND);
+        
+        JPanel rightPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        rightPanel.setBackground(Theme.BACKGROUND);
 
         regenerateButton = createActionButton("RE-GENERATE KIT", false);
         downloadButton = createActionButton("DOWNLOAD ZIP", true);
 
-        actions.add(regenerateButton);
-        actions.add(downloadButton);
-        add(actions, BorderLayout.CENTER);
+        rightPanel.add(regenerateButton);
+        rightPanel.add(downloadButton);
+        add(rightPanel, BorderLayout.EAST);
+
+        
+        showKitMode(false);
+        showButtons(false);
+    }
+
+    private JButton createBackButton() {
+        JButton button = new JButton("← BACK");
+        button.setFont(Theme.FONT_BUTTON);
+        button.setForeground(Theme.TEXT_PRIMARY);
+        button.setBackground(Theme.PANEL_BACKGROUND);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(new LineBorder(Theme.BORDER, 1));
+        button.setPreferredSize(new Dimension(100, 36));
+        return button;
     }
 
     private JButton createActionButton(String text, boolean highlighted) {
@@ -59,10 +62,19 @@ public class HeaderPanel extends JPanel {
         button.setBackground(Theme.PANEL_BACKGROUND);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(200, 46));
+        button.setPreferredSize(new Dimension(180, 40));
         Color borderColor = highlighted ? Theme.ACCENT : Theme.BORDER;
         button.setBorder(new LineBorder(borderColor, 1));
         return button;
+    }
+
+    public void showKitMode(boolean isKitMode) {
+        backButton.setVisible(isKitMode);
+    }
+
+    public void showButtons(boolean show) {
+        regenerateButton.setVisible(show);
+        downloadButton.setVisible(show);
     }
 
     public JButton getRegenerateButton() {
@@ -71,5 +83,9 @@ public class HeaderPanel extends JPanel {
 
     public JButton getDownloadButton() {
         return downloadButton;
+    }
+
+    public JButton getBackButton() {
+        return backButton;
     }
 }

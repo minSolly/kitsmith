@@ -1,10 +1,11 @@
 package solly.kitsmith.gui;
 
+import solly.kitsmith.KitSlot;
+import solly.kitsmith.audio.AudioCache;
 import solly.kitsmith.audio.AudioEngine;
 import solly.kitsmith.dsp.AudioConstants;
 
 import javax.swing.JPanel;
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -13,9 +14,9 @@ import java.awt.event.MouseEvent;
 
 public class WaveformPanel extends JPanel {
 
-    private static final int BAR_COUNT = 90;
-
-    private float[] audio;
+    private static final int BAR_COUNT = 50;
+    private KitSlot slot;
+    private float[] cachedPeaks;
     private boolean hovered;
 
     public WaveformPanel() {
@@ -28,7 +29,9 @@ public class WaveformPanel extends JPanel {
             public void mouseEntered(MouseEvent e) {
                 hovered = true;
                 repaint();
-                AudioEngine.getInstance().play(audio, AudioConstants.SAMPLE_RATE);
+                if (slot != null) {
+                    AudioEngine.getInstance().play(slot.getAudio(), AudioConstants.SAMPLE_RATE);
+                }
             }
 
             @Override
@@ -40,14 +43,34 @@ public class WaveformPanel extends JPanel {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                AudioEngine.getInstance().play(audio, AudioConstants.SAMPLE_RATE);
+                if (slot != null) {
+                    AudioEngine.getInstance().play(slot.getAudio(), AudioConstants.SAMPLE_RATE);
+                }
             }
         });
     }
 
-    public void setAudio(float[] audio) {
-        this.audio = audio;
+    public void setSlot(KitSlot slot) {
+        this.slot = slot;
+        this.cachedPeaks = null;
         repaint();
+    }
+
+    public void setAudio(float[] audio) {
+        if (slot != null) {
+            AudioCache.getInstance().invalidate(slot);
+        }
+        repaint();
+    }
+
+    private float[] getPeaks() {
+        if (cachedPeaks != null) return cachedPeaks;
+        if (slot == null) {
+            cachedPeaks = new float[BAR_COUNT];
+            return cachedPeaks;
+        }
+        cachedPeaks = AudioCache.getInstance().getPeaks(slot, BAR_COUNT);
+        return cachedPeaks;
     }
 
     @Override
@@ -63,49 +86,22 @@ public class WaveformPanel extends JPanel {
         g2.setColor(hovered ? Theme.BORDER_HOVER : Theme.BORDER);
         g2.drawLine(0, midY, width, midY);
 
-        if (audio == null || audio.length == 0) return;
-
-        float[] peaks = downsample(audio, BAR_COUNT);
+        float[] peaks = getPeaks();
         float barWidth = (float) width / BAR_COUNT;
 
-        for (int i = 0; i < BAR_COUNT; i++) {
+        for (int i = 0; i < BAR_COUNT && i < peaks.length; i++) {
             float amp = peaks[i];
-            int barHeight = (int) (amp * (height * 0.46f));
+            int barHeight = (int) (amp * (height * 0.44f));
             int x = (int) (i * barWidth);
-            int w = Math.max(1, (int) (barWidth * 0.55f));
+            int w = Math.max(1, (int) (barWidth * 0.45f));
 
-            if (barHeight < 2) {
+            if (barHeight < 1) {
                 g2.setColor(Theme.WAVEFORM_TAIL);
-                g2.fillOval(x + w / 2, midY - 1, 2, 2);
+                g2.fillRect(x + w / 2, midY - 1, 1, 2);
             } else {
                 g2.setColor(hovered ? Theme.ACCENT : Theme.WAVEFORM_FILL);
                 g2.fillRect(x, midY - barHeight, w, barHeight * 2);
             }
         }
-    }
-
-    private float[] downsample(float[] source, int bars) {
-        float[] peaks = new float[bars];
-        int segment = Math.max(1, source.length / bars);
-        float maxPeak = 0f;
-
-        for (int b = 0; b < bars; b++) {
-            int start = b * segment;
-            int end = Math.min(source.length, start + segment);
-            float peak = 0f;
-            for (int i = start; i < end; i++) {
-                float a = Math.abs(source[i]);
-                if (a > peak) peak = a;
-            }
-            peaks[b] = peak;
-            if (peak > maxPeak) maxPeak = peak;
-        }
-
-        if (maxPeak > 0.0001f) {
-            for (int b = 0; b < bars; b++) {
-                peaks[b] = peaks[b] / maxPeak;
-            }
-        }
-        return peaks;
     }
 }

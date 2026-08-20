@@ -12,17 +12,51 @@ import java.io.IOException;
 public class AudioExporter {
 
     public static void exportWav(float[] audio, String path, int sampleRate) throws IOException {
+        if (audio == null || audio.length == 0) {
+            throw new IOException("Audio data is empty");
+        }
+
+        System.out.println("Exporting WAV: " + path + ", samples: " + audio.length);
+
         AudioInputStream stream = toStream(audio, sampleRate);
-        AudioSystem.write(stream, AudioFileFormat.Type.WAVE, new File(path));
-        stream.close();
+        try {
+            File file = new File(path);
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+            AudioSystem.write(stream, AudioFileFormat.Type.WAVE, file);
+            System.out.println("WAV written: " + file.length() + " bytes");
+        } finally {
+            stream.close();
+        }
     }
 
     public static byte[] toWavBytes(float[] audio, int sampleRate) throws IOException {
+        if (audio == null || audio.length == 0) {
+            System.err.println("ERROR: Audio data is empty");
+            throw new IOException("Audio data is empty");
+        }
+
+        System.out.println("Converting to WAV bytes, samples: " + audio.length);
+
         AudioInputStream stream = toStream(audio, sampleRate);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        AudioSystem.write(stream, AudioFileFormat.Type.WAVE, baos);
-        stream.close();
-        return baos.toByteArray();
+        try {
+            AudioSystem.write(stream, AudioFileFormat.Type.WAVE, baos);
+            byte[] result = baos.toByteArray();
+            System.out.println("WAV bytes generated: " + result.length + " bytes");
+            if (result.length == 0) {
+                throw new IOException("Generated WAV is empty");
+            }
+            return result;
+        } catch (Exception e) {
+            System.err.println("Error in toWavBytes: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } finally {
+            stream.close();
+        }
     }
 
     private static AudioInputStream toStream(float[] audio, int sampleRate) {

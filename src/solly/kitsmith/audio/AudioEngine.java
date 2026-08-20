@@ -5,38 +5,55 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import java.io.ByteArrayInputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class AudioEngine {
 
     private static final AudioEngine INSTANCE = new AudioEngine();
     private Clip activeClip;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    private AudioEngine() {
-    }
+    private AudioEngine() {}
 
     public static AudioEngine getInstance() {
         return INSTANCE;
     }
 
     public synchronized void play(float[] audio, int sampleRate) {
-        stop();
         if (audio == null || audio.length == 0) return;
-        try {
-            AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
-            byte[] bytes = floatToPcm(audio);
-            AudioInputStream stream = new AudioInputStream(
-                    new ByteArrayInputStream(bytes), format, audio.length);
-            activeClip = AudioSystem.getClip();
-            activeClip.open(stream);
-            activeClip.start();
-        } catch (Exception ignored) {
-        }
+
+        executor.submit(() -> {
+            synchronized (AudioEngine.this) {
+                stopInternal();
+                try {
+                    AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, false);
+                    byte[] bytes = floatToPcm(audio);
+                    AudioInputStream stream = new AudioInputStream(
+                            new ByteArrayInputStream(bytes), format, audio.length);
+                    activeClip = AudioSystem.getClip();
+                    activeClip.open(stream);
+                    activeClip.start();
+                } catch (Exception ignored) {
+                }
+            }
+        });
     }
 
     public synchronized void stop() {
+        executor.submit(() -> {
+            synchronized (AudioEngine.this) {
+                stopInternal();
+            }
+        });
+    }
+
+    private void stopInternal() {
         if (activeClip != null) {
             try {
-                if (activeClip.isRunning()) activeClip.stop();
+                if (activeClip.isRunning()) {
+                    activeClip.stop();
+                }
                 activeClip.close();
             } catch (Exception ignored) {
             }

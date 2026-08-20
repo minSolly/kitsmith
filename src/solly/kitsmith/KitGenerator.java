@@ -29,7 +29,7 @@ public class KitGenerator {
         int hour = LocalTime.now().getHour();
         int min = LocalTime.now().getHour();
 
-        kit.setName("KitSmith_Kit_" + hour + ":" + min);
+        kit.setName("KitSmith_Kit_" + hour + "_" + min);
 
         String[][] layout = {
                 {"SYNTHS 1", "SYNTHS 2", "SYNTHS 3"},

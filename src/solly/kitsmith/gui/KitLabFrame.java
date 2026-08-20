@@ -1,4 +1,3 @@
-
 package solly.kitsmith.gui;
 
 import solly.kitsmith.Kit;
@@ -18,12 +17,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.IOException;
 
 public class KitLabFrame extends JFrame {
 
@@ -34,7 +30,7 @@ public class KitLabFrame extends JFrame {
     private Kit currentKit;
 
     public KitLabFrame() {
-        setTitle("Kit Lab");
+        setTitle("KitSmith");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setUndecorated(true);
         setMinimumSize(new Dimension(700, 500));
@@ -71,13 +67,9 @@ public class KitLabFrame extends JFrame {
     }
 
     private void enterFullScreen() {
-        GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        if (device.isFullScreenSupported()) {
-            device.setFullScreenWindow(this);
-        } else {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            setVisible(true);
-        }
+        
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setVisible(true);
     }
 
     private JPanel buildStatusBar() {
@@ -116,20 +108,36 @@ public class KitLabFrame extends JFrame {
         }
 
         JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File(currentKit.getName() + ".zip"));
+        String safeName = currentKit.getName().replace(":", "-").replace(" ", "_");
+        chooser.setSelectedFile(new File(safeName + ".zip"));
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".zip")) {
-                file = new File(file.getPath() + ".zip");
+
+            String path = file.getAbsolutePath();
+            if (!path.toLowerCase().endsWith(".zip")) {
+                file = new File(path + ".zip");
             }
+
             File finalFile = file;
             setStatus("Exporting zip...");
+            headerPanel.getDownloadButton().setEnabled(false);
+
             new Thread(() -> {
                 try {
                     ZipExporter.exportKit(currentKit, finalFile, AudioConstants.SAMPLE_RATE);
-                    setStatus("Exported: " + finalFile.getName());
+                    SwingUtilities.invokeLater(() -> {
+                        setStatus("Exported: " + finalFile.getName() + " (" +
+                                (finalFile.length() / 1024) + " KB)");
+                        headerPanel.getDownloadButton().setEnabled(true);
+                    });
                 } catch (Exception ex) {
-                    setStatus("Export error: " + ex.getMessage());
+                    SwingUtilities.invokeLater(() -> {
+                        setStatus("Export error: " + ex.getMessage());
+                        headerPanel.getDownloadButton().setEnabled(true);
+                    });
+                    ex.printStackTrace();
                 }
             }).start();
         }

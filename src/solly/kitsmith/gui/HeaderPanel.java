@@ -45,7 +45,7 @@ public class HeaderPanel extends JPanel {
         actions.setBackground(Theme.BACKGROUND);
 
         regenerateButton = createActionButton("RE-GENERATE KIT", false);
-        downloadButton = createActionButton("DOWNLOAD ZIP (doesn't work for now)", true);
+        downloadButton = createActionButton("DOWNLOAD ZIP", true);
 
         actions.add(regenerateButton);
         actions.add(downloadButton);
